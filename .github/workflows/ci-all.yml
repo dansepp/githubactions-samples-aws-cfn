@@ -1,0 +1,62 @@
+name: CI-ALL
+
+on:
+  # Run on push/merge to main; skip if just docs
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  ACTIONS_AWS_REGION: us-east-2
+  INFRA_PATH: './src/infra'
+
+jobs: # Running 'linting' and 'validation' as separate jobs to allow parallel execution. Could run sequentialy and use same matrix.
+
+  linting:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component:
+          - component1-hub
+          - component1-spoke
+          - component2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Lint CloudFormation Template
+        uses: ./.github/actions/cfn-lint
+        with:
+          path-to-cfn-files: '${{ env.INFRA_PATH }}/${{ matrix.component }}/**/template.yml'
+
+  validation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      matrix:
+        component:
+          - component1-hub
+          - component1-spoke
+          - component2
+    # These steps are essentially a duplication of the reusable workflow qa-cfn.yml
+    # Can't use a matrix strategy with a reusable workflow
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ env.ACTIONS_AWS_REGION }}
+          role-to-assume: ${{ secrets.GH_IAM_ROLE }}
+          role-session-name: GitHubActionsSession-${{ env.GITHUB_RUN_ID }}
+      - name: Validate CloudFormation Template
+        uses: ./.github/actions/cfn-validate
+        with:
+          cfn-template-path: '${{ env.INFRA_PATH }}/${{ matrix.component }}/template.yml'
+          cfn-template-location: local

@@ -1,0 +1,6 @@
+StackName: 'component1-hub'
+Tags:
+- Key: 'app'
+  Value: 'actions-demo'
+- Key: 'service'
+  Value: 'component1-hub'

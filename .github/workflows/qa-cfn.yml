@@ -1,0 +1,54 @@
+name: CFN Quality Checks
+
+on:
+  workflow_call:
+    inputs:
+      aws-region:
+        description: 'AWS Region'
+        required: true
+        type: string
+      base-path:
+        required: true
+        type: string
+      name:
+        required: true
+        type: string
+    outputs:
+      var2:
+        description: "Some output"
+        value: ${{ jobs.validation.outputs.output1 }}
+    secrets:
+      gh-iam-role:
+        description: "ARN of the IAM Role used by GitHub to access AWS"
+        required: true
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Lint CloudFormation Template
+        uses: ./.github/actions/cfn-lint
+        with:
+          path-to-cfn-files: '${{ inputs.base-path }}/${{ inputs.name }}/**/template.yml'
+
+  validation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ inputs.aws-region }}
+          role-to-assume: ${{ secrets.gh-iam-role }}
+          role-session-name: GitHubActionsSession-${{ env.GITHUB_RUN_ID }}
+      - name: Validate CloudFormation Template
+        uses: ./.github/actions/cfn-validate
+        with:
+          cfn-template-path: '${{ inputs.base-path }}/${{ inputs.name }}/template.yml'
+          cfn-template-location: local

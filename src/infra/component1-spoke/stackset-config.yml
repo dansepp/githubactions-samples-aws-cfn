@@ -1,0 +1,14 @@
+StackSetName: component1-spoke
+Description: 'Sample spoke component deployed to multiple accounts as part of a hub and spoke design'
+Tags:
+- Key: 'app'
+  Value: 'actions-demo'
+- Key: 'service'
+  Value: 'component1-spoke'
+PermissionModel: SERVICE_MANAGED
+AutoDeployment:
+  Enabled: true
+  RetainStacksOnAccountRemoval: false
+CallAs: SELF
+ManagedExecution:
+  Active: true

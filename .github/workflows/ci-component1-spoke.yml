@@ -1,0 +1,26 @@
+name: CI component1-spoke
+
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'src/infra/component1-spoke/**'
+  # pull_request:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'src/infra/component1-spoke/**'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  qa-checks:
+    uses: ./.github/workflows/qa-cfn.yml
+    with:
+      aws-region: us-east-2
+      base-path: './src/infra'
+      name: 'component1-spoke'
+    secrets:
+      gh-iam-role: ${{ secrets.GH_IAM_ROLE }}
+

@@ -1,0 +1,33 @@
+name: CD component1-spoke
+
+on:
+  # Deploy on push/merge to main
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'src/infra/component1-spoke/**'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  
+  # Demonstrate the spoke component deploying whenever the hub does, but not always together
+  workflow_run:
+    workflows:
+      - "CD component1-hub"
+    branches:
+      - "*"
+    types:
+      - completed
+
+jobs:
+  deploy-component:
+    uses: ./.github/workflows/deploy-cfn.yml
+    with:
+      aws-region: us-east-2
+      base-path: './src/infra'
+      config-file: 'stackset-config.yml'
+      deployment-type: stackset
+      name: component1-spoke
+    secrets:
+      gh-artifacts-bucket: ${{ secrets.GH_ACTIONS_BUCKET }}
+      gh-iam-role: ${{ secrets.GH_IAM_ROLE }}

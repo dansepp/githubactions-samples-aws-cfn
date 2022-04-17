@@ -1,0 +1,28 @@
+name: 'Cfn Validate'
+description: 'Validate CloudFormation Templates via CLI'
+inputs:
+  cfn-template-path:
+    description: 'Local or S3 path to CloudFormation template to validate'
+    required: true
+  cfn-template-location:
+    default: local
+    description: Indicates location of CloudFormation template being validated, s3 or local
+    required: true
+  
+runs:
+  using: "composite"
+  steps:
+    - name: Validate
+      run: |
+        echo Template location: ${{ inputs.cfn-template-location }}
+        if [[ "${{ inputs.cfn-template-location }}"  == "local" ]]
+        then
+          aws cloudformation validate-template --template-body file://${{ inputs.cfn-template-path }}
+        elif [[ "${{ inputs.cfn-template-location }}"  == "s3" ]]
+        then
+          aws cloudformation validate-template --template-url ${{ inputs.cfn-template-path }}
+        else
+          printf 'Invalid CloudFormation template location'
+          exit 1
+        fi
+      shell: bash

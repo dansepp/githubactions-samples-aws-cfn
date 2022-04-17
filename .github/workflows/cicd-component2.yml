@@ -1,0 +1,40 @@
+name: CICD component2
+
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/infra/component2/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/infra/component2/**'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  # This runs on all push and pull request events to main
+  ci:
+    uses: ./.github/workflows/qa-cfn.yml
+    with:
+      aws-region: us-east-2
+      base-path: './src/infra'
+      name: 'component2'
+    secrets:
+      gh-iam-role: ${{ secrets.GH_IAM_ROLE }}
+  # This runs on all push events to main after ci completes
+  cd:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [ci]
+    uses: ./.github/workflows/deploy-cfn.yml
+    with:
+      aws-region: us-east-2
+      base-path: './src/infra'
+      config-file: 'stack-config.yml'
+      deployment-type: stack
+      name: component2
+    secrets:
+      gh-artifacts-bucket: ${{ secrets.GH_ACTIONS_BUCKET }}
+      gh-iam-role: ${{ secrets.GH_IAM_ROLE }}

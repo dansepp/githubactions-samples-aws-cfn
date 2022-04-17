@@ -1,0 +1,12 @@
+StackSetName: component1-spoke
+DeploymentTargets:
+  OrganizationalUnitIds:
+  - 'ou-1'
+  - 'ou-2'
+Regions:
+- 'us-east-2'
+OperationPreferences:
+  RegionConcurrencyType: PARALLEL
+  FailureToleranceCount: 0
+  MaxConcurrentCount: 1
+CallAs: SELF
