@@ -1,0 +1,24 @@
+name: CD component1-hub
+
+on:
+  # Deploy on push/merge to main
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'src/infra/component1-hub/**'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  deploy-component:
+    uses: ./.github/workflows/deploy-cfn.yml
+    with:
+      aws-region: us-east-2
+      base-path: './src/infra'
+      config-file: 'stack-config.yml'
+      deployment-type: stack
+      name: component1-hub
+    secrets:
+      gh-artifacts-bucket: ${{ secrets.GH_ACTIONS_BUCKET }}
+      gh-iam-role: ${{ secrets.GH_IAM_ROLE }}

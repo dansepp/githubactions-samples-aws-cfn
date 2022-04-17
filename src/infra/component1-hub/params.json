@@ -1,0 +1,6 @@
+[
+  {
+    "ParameterKey": "SsmParamName",
+    "ParameterValue": "my-cool-param-hub"
+  }
+]

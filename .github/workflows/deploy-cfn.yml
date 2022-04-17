@@ -1,0 +1,99 @@
+name: CFN Deploy Stack or StackSet
+
+on:
+  workflow_call:
+    inputs:
+      aws-region:
+        default: 'us-east-2'
+        description: 'AWS Region'
+        required: true
+        type: string
+      base-path:
+        required: true
+        type: string
+      deployment-type:
+        required: true
+        type: string
+      config-file:
+        default: 'config.yml'
+        required: true
+        type: string
+      package-folder:
+        default: 'github-actions-packaged'
+        required: false
+        type: string
+      params-file:
+        default: 'params.json'
+        required: false
+        type: string
+      name:
+        required: true
+        type: string
+      stack-instances-config-file:
+        default: 'stack-instances.yml'
+        required: false
+        type: string
+    outputs:
+      var2:
+        description: "Some output"
+        value: ${{ jobs.validation.outputs.output1 }}
+    secrets:
+      gh-artifacts-bucket:
+        description: "Name of the S3 bucket in the target account used for packaged templates and buid artifacts"
+        required: true
+      gh-iam-role:
+        description: "ARN of the IAM Role used by GitHub to access AWS"
+        required: true
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      template-s3-url: ${{ steps.package-template.outputs.template-url-path }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ inputs.aws-region }}
+          role-to-assume: ${{ secrets.gh-iam-role }}
+          role-session-name: GitHubActionsSession-${{ github.run_id }}
+      - id: package-template
+        name: Package CloudFormation Template
+        uses: ./.github/actions/cfn-package
+        with:
+          component-name: '${{ inputs.name }}'
+          packaged-file-name: 'packaged-template-${{ github.run_id }}.yml'
+          path-to-cfn-file: '${{ inputs.base-path }}/${{ inputs.name }}/template.yml'
+          s3-bucket: '${{ secrets.gh-artifacts-bucket }}'
+          s3-prefix: '${{ inputs.package-folder }}'
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [package]
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ inputs.aws-region }}
+          role-to-assume: ${{ secrets.gh-iam-role }}
+          role-session-name: GitHubActionsSession-${{ github.run_id }}
+      - id: deploy-template
+        name: Deploy CloudFormation Template
+        uses: ./.github/actions/cfn-deploy
+        with:
+          component-path: '${{ inputs.base-path }}/${{ inputs.name }}'
+          config-file-name: '${{ inputs.config-file }}'
+          deployment-type: '${{ inputs.deployment-type }}'
+          instances-config-file-name: '${{ inputs.stack-instances-config-file }}'
+          param-file-name: '${{ inputs.params-file }}'
+          stack-or-stackset-name: '${{ inputs.name }}'
+          template-url: 'https://${{ secrets.gh-artifacts-bucket }}.s3.amazonaws.com/${{ needs.package.outputs.template-s3-url }}'

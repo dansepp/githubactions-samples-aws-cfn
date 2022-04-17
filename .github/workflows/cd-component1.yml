@@ -1,0 +1,36 @@
+name: CD component1
+
+on:
+  # This would be uncommented to trigger deployment of all pieces of component1 on pushes to the main branch
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'src/infra/component1*/**'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  deploy-hub:
+    uses: ./.github/workflows/deploy-cfn.yml
+    with:
+      aws-region: us-east-2
+      base-path: './src/infra'
+      config-file: 'stack-config.yml'
+      deployment-type: stack
+      name: component1-hub
+    secrets:
+      gh-artifacts-bucket: ${{ secrets.GH_ACTIONS_BUCKET }}
+      gh-iam-role: ${{ secrets.GH_IAM_ROLE }}
+  deploy-spoke:
+    needs: [deploy-component-hub]
+    uses: ./.github/workflows/deploy-cfn.yml
+    with:
+      aws-region: us-east-2
+      base-path: './src/infra'
+      config-file: 'stackset-config.yml'
+      deployment-type: stackset
+      name: component1-spoke
+    secrets:
+      gh-artifacts-bucket: ${{ secrets.GH_ACTIONS_BUCKET }}
+      gh-iam-role: ${{ secrets.GH_IAM_ROLE }}
